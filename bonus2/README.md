@@ -1,4 +1,4 @@
-# bonus2 — sled nop + overflow
+# bonus2 : sled nop + overflow
     void greetuser(void)
     {
         char local_4c [4];

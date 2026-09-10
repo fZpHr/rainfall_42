@@ -1,4 +1,4 @@
-# level5 — format string
+# level5 : format string
 
     void o(void)
     {
@@ -25,13 +25,13 @@
 
 
 
-Encore un format string (`printf(buf)` sans `"%s"`, dans `n()`), mais cette fois il n'y a **aucun appel à `system()` sur le chemin normal du programme** — `n()` se contente de `fgets` + `printf` + `exit(1)`.
+Encore un format string (`printf(buf)` sans `"%s"`, dans `n()`), mais cette fois il n'y a **aucun appel à `system()` sur le chemin normal du programme** : `n()` se contente de `fgets` + `printf` + `exit(1)`.
 il y a la fonction `o()`, qui elle fait bien `system("/bin/sh")` :
 
 
 Le souci : `n()` termine toujours avec `exit()`, pas `return` impossible de rediriger un retour de fonction ici comme au level1/level2. Mais `exit` est une fonction de la libc, appelée via son entrée dans la **PLT/GOT** une table d'adresses que le programme consulte à chaque appel :
 
-Le plan : utiliser le format string pour **écraser l'entrée GOT de `exit`** avec l'adresse de `o()`. La prochaine fois que le programme appelle `exit(1)`, il va sauter dans `o()` à la place — et `o()` lance le shell.
+Le plan : utiliser le format string pour **écraser l'entrée GOT de `exit`** avec l'adresse de `o()`. La prochaine fois que le programme appelle `exit(1)`, il va sauter dans `o()` à la place : et `o()` lance le shell.
 
 **Trouver la position de notre buffer**
 

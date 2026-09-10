@@ -1,4 +1,4 @@
-# level3 — format string
+# level3 : format string
 
 
     void v(void)
@@ -23,7 +23,7 @@
 
 
 
-Le  problème : `printf(local_20c)` passe directement notre propre input comme chaîne de format. Aucune chaîne de contrôle fixe (`"%s", local_20c`), juste `local_20c` tout seul comme premier argument — `printf` va donc interpréter n'importe quel `%x`, `%s`, `%n` qu'on lui envoie.
+Le  problème : `printf(local_20c)` passe directement notre propre input comme chaîne de format. Aucune chaîne de contrôle fixe (`"%s", local_20c`), juste `local_20c` tout seul comme premier argument : `printf` va donc interpréter n'importe quel `%x`, `%s`, `%n` qu'on lui envoie.
 
     | (Ancienne variable X)  | <-- printf va lire ça pour le 4ème %x
     |------------------------|

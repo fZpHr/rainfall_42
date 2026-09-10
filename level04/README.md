@@ -1,4 +1,4 @@
-# level4 — format string
+# level4 : format string
 
     void p(char *param_1)
     {

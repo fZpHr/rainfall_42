@@ -1,4 +1,4 @@
-# level6 — overflow heap
+# level6 : overflow heap
 
     void n(void)
     {
