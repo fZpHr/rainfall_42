@@ -1,4 +1,4 @@
-# level8
+# level8 — abus heap
 
     char *auth;
     char *service;
@@ -33,7 +33,7 @@
     }
 
 
-Le check final (`login`) regarde `*(auth + 32)` 32 octets après le début d'un bloc que `malloc(4)` n'a réservé que sur... 4 octets. Le reste (jusqu'à l'octet 32 et au-delà) n'appartient pas vraiment à `auth`, c'est juste de la mémoire adjacente sur le tas. Si on arrive à y placer un octet non-nul, le check passe et `system("/bin/sh")` s'exécute
+Le check final (`login`) regarde `*(auth + 32)` 32 octets après le début d'un bloc que `malloc(4)` n'a réservé que sur... 4 octets. Le reste (jusqu'à l'octet 32 et au-delà) n'appartient pas vraiment à `auth`, c'est juste de la mémoire adjacente sur le heap. Si on arrive à y placer un octet non-nul, le check passe et `system("/bin/sh")` s'exécute
 
 Il y a aussi un souci directement dans `auth` (elle vérifie la taille du texte source avant le `strcpy`, mais jamais la taille réelle de sa destination 4 octets), mais la solution ci-dessous n'en a pas besoin : elle passe par `service`, dont le `strdup` n'a lui carrément aucune limite.
 
@@ -50,18 +50,18 @@ Il y a aussi un souci directement dans `auth` (elle vérifie la taille du texte 
     auth
     0x804a008, (nil)
 
-Contenu du tas à ce moment (chaque ligne = 4 octets) :
+Contenu du heap à ce moment (chaque ligne = 4 octets) :
 
     adresse        contenu
     0x0804a008     00 00 00 00     <- auth[0..3], nos 4 octets réservés
     0x0804a00c     .. .. .. ..     <- pas encore alloué
 
-**3. On tape `service0123456789abcdef` puis Entrée.** Le programme reconnaît le préfixe `service`, puis fait `strdup(buf + 7)`. Important : `fgets` (contrairement à `gets`) **garde le `\n`** du retour à la ligne dans le buffer donc la vraie chaîne dupliquée n'est pas `"0123456789abcdef"` (16 caractères) mais `"0123456789abcdef\n"` (17 caractères), suivie du `\0` que `strdup` ajoute lui-même. Ce nouveau bloc est placé **juste après** celui de `auth` sur le tas (même principe d'allocations consécutives que les levels précédents) :
+**3. On tape `service0123456789abcdef` puis Entrée.** Le programme reconnaît le préfixe `service`, puis fait `strdup(buf + 7)`. Important : `fgets` (contrairement à `gets`) **garde le `\n`** du retour à la ligne dans le buffer donc la vraie chaîne dupliquée n'est pas `"0123456789abcdef"` (16 caractères) mais `"0123456789abcdef\n"` (17 caractères), suivie du `\0` que `strdup` ajoute lui-même. Ce nouveau bloc est placé **juste après** celui de `auth` sur le heap (même principe d'allocations consécutives que les levels précédents) :
 
     service0123456789abcdef
     0x804a008, 0x804a018
 
-Contenu du tas maintenant:
+Contenu du heap maintenant:
 
     adresse        contenu           texte
     0x0804a008     00 00 00 00                    <- auth[0..3]
@@ -80,7 +80,7 @@ Contenu du tas maintenant:
 
     auth + 0x20  =  0x0804a008 + 0x20  =  0x0804a028
 
-Cette adresse tombe pile sur l'octet juste après nos 16 caractères c'est-à-dire le **`\n`** que `fgets` a capturé quand on a appuyé sur Entrée (`0x0a` en ASCII), pas un `\0`. Le check lit 4 octets d'un coup (`0x0a 0x00 0x00 0x00`) comme un entier, ce qui donne `10` en décimal non-nul, donc `system("/bin/sh")` se déclenche.
+Cette adresse tombe stack sur l'octet juste après nos 16 caractères c'est-à-dire le **`\n`** que `fgets` a capturé quand on a appuyé sur Entrée (`0x0a` en ASCII), pas un `\0`. Le check lit 4 octets d'un coup (`0x0a 0x00 0x00 0x00`) comme un entier, ce qui donne `10` en décimal non-nul, donc `system("/bin/sh")` se déclenche.
 
 **5. On tape `login`.** Le programme relit `*(auth + 0x20)`, le trouve non-nul, et lance `system("/bin/sh")` :
 

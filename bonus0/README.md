@@ -1,4 +1,4 @@
-# bonus0
+# bonus0 — sled nop + overflow
 
     void p(char *dest) {
         char buffer[4096]; // Alloué à ebp-0x1008
@@ -58,7 +58,7 @@
 
 **Trouver l'adresse du buffer**
 
-Pas de tas cette fois, tout se passe sur la pile — donc adresse directe + NOP sled, plus besoin de double indirection ni de tas :
+Pas de heap cette fois, tout se passe sur la stack — donc adresse directe + NOP sled, plus besoin de double indirection ni de heap :
 
     (gdb) b *p+28
     (gdb) run

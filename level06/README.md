@@ -1,4 +1,4 @@
-# level6
+# level6 — overflow heap
 
     void n(void)
     {
@@ -28,7 +28,7 @@
 
 `m()` et `n()` sont deux fonctions jamais appelées normalement (visibles dans `info function`) : `m()` fait juste un `puts`, `n()` fait `system("/bin/sh")`.
 
-`malloc` place ses blocs les uns après les autres, déborder `__dest` (64 octets) écrase directement `puVar1` le pointeur de fonction juste après sur le tas. On peut donc rediriger `(*(code *)*puVar1)();` où on veut, en écrasant ce pointeur via l'argument.
+`malloc` place ses blocs les uns après les autres, déborder `__dest` (64 octets) écrase directement `puVar1` le pointeur de fonction juste après sur le heap. On peut donc rediriger `(*(code *)*puVar1)();` où on veut, en écrasant ce pointeur via l'argument.
 
 **Trouver l'offset**
 

@@ -1,4 +1,4 @@
-# level1
+# level1 — overflow
 
 overflow basique
 
@@ -17,7 +17,7 @@ overflow basique
       return;
     }
 
-`gets()` sur un buffer de 76 octets, aucune limite de taille : ça écrase direct l'adresse de retour sur la pile.
+`gets()` sur un buffer de 76 octets, aucune limite de taille : ça écrase direct l'adresse de retour sur la stack.
 
 **Trouver l'offset avec gef**
 
@@ -31,7 +31,7 @@ Dans gdb, génère un pattern De Bruijn de 200 caractères (largement assez pour
        gdb ./level1
        gef> run < pattern.txt
 
-   Le programme crash, gef affiche le contexte (registres, pile, etc.) automatiquement.
+   Le programme crash, gef affiche le contexte (registres, stack, etc.) automatiquement.
 
 gef va retrouver l'offset directement depuis la valeur d'EIP :
 

@@ -1,4 +1,4 @@
-# level3
+# level3 — format string
 
 
     void v(void)
@@ -36,7 +36,7 @@ Le  problème : `printf(local_20c)` passe directement notre propre input comme c
     | Pointeur vers "%x %x.."| <-- 1er argument : la chaîne de format 
     |------------------------|
 
-**Trouver où notre buffer atterrit dans la pile**
+**Trouver où notre buffer atterrit dans la stack**
 
     echo "BBBB %x %x %x %x %x %x %x" | ./level3
     BBBB 200 b7fd1ac0 b7ff37d0 42424242 20782520 25207825 78252078
@@ -54,7 +54,7 @@ Le  problème : `printf(local_20c)` passe directement notre propre input comme c
 
 **Construire le payload**
 
-`%n` écrit le nombre de caractères déjà affichés par ce `printf`, à l'adresse donnée. Il faut donc que pile 64 caractères soient sortis avant que `%4$n` s'exécute :
+`%n` écrit le nombre de caractères déjà affichés par ce `printf`, à l'adresse donnée. Il faut donc que stack 64 caractères soient sortis avant que `%4$n` s'exécute :
 
 - 4 octets d'adresse (comptés comme caractères "littéraux" par printf, même s'ils sont illisibles) ;
 - + 60 caractères de bourrage (`'B'`) ;

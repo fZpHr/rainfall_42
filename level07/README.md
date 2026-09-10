@@ -1,4 +1,4 @@
-# level7
+# level7 — overflow heap
 
     void m(void *param_1,int param_2,char *param_3,int param_4,int param_5)
     {
@@ -68,7 +68,7 @@ version clair :
     strcpy(p2, argv[1]); 
     strcpy(p4, argv[2]); 
 
-Deux `strcpy` sans limite sur des buffers minuscules (8 octets), et les 4 blocs sont alloués consécutivement sur le tas (même principe qu'au level6). Le premier `strcpy` (`argv[1]`) peut déborder de `p2` jusque dans `p3`, et écraser le pointeur `p4` que `p3` contient celui-là même qui sert de destination au **deuxième** `strcpy` (`argv[2]`).
+Deux `strcpy` sans limite sur des buffers minuscules (8 octets), et les 4 blocs sont alloués consécutivement sur le heap (même principe qu'au level6). Le premier `strcpy` (`argv[1]`) peut déborder de `p2` jusque dans `p3`, et écraser le pointeur `p4` que `p3` contient celui-là même qui sert de destination au **deuxième** `strcpy` (`argv[2]`).
 
 **Trouver l'offset**
 

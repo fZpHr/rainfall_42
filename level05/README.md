@@ -1,4 +1,4 @@
-# level5
+# level5 — format string
 
     void o(void)
     {
